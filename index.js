@@ -3,6 +3,7 @@
 var fs          = require('fs');
 var express = require('express');
 var sqlite3 = require("sqlite3").verbose();
+var WebSocketServer   = require('ws').Server;
 
 var app = express();
 
