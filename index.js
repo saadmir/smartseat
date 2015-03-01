@@ -9,7 +9,7 @@ var app = express();
 
 var query = {};
 
-var db  = new sqlite3.Database('/data/buttz.sqlite');
+var db  = new sqlite3.Database('/home/pi/data/smartseat.sqlite');
 db.serialize(function() {
   db.run("CREATE TABLE IF NOT EXISTS tist(tid, timestamp INTEGER, event TEXT, temp_ir REAL, temp_amb REAL, a_x REAL, a_y REAL, a_z REAL, g_x REAL, g_y REAL, g_z REAL, h REAL, m_x REAL, m_y REAL, m_z REAL)");
   //db.run("INSERT INTO demo (runtime) VALUES (?)", new Date().getTime());
@@ -81,6 +81,31 @@ app.get('/:uid/:event/:limit', function(req, res){
 app.get('/', function(req, res){
   res.send('hello world');
 });
+
+//var WebSocketServer = require('ws').Server
+//var wss = new WebSocketServer({port: 8080});
+
+//var idx = 0;
+//var clients = {};
+//wss.on('connection', function(ws){
+  //idx++;
+  //ws.idx = idx;
+  //console.log('inserting client: ' + ws.idx);
+  //clients[idx] = ws;
+  //ws.on('close', function() {
+    //console.log('stopping client: ' + ws.idx);
+    //delete clients[idx];
+  //});
+//});
+
+//var broadcast = function(data){
+  ////var data = JSON.stringify(json);
+  //for(var i in clients){
+    //clients[i].send(data, function() { [> ignore errors <] });
+  //}
+//};
+
+
 
 app.listen(3000);
 

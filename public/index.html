@@ -1,0 +1,154 @@
+<!DOCTYPE html>
+<html lang="en">
+  <head>
+    <link rel="stylesheet" href="/css/bootstrap.min.css">
+    <link rel="stylesheet" href="/css/bootstrap-theme.min.css">
+    <link rel="stylesheet" href="/css/flapper.css" type="text/css" />
+    <link rel="stylesheet" href="/css/styles.css" type="text/css" />
+
+    <meta name="viewport" content="width=device-width, initial-scale=1">
+
+    <script src="/js/jquery.min.js"></script>
+    <script src="/js/bootstrap.min.js"></script>
+    <script src="/js/underscore-min.js"></script>
+    <script src="/js/jquery.transform-0.9.3.min.js"></script>
+    <script src="/js/jshashtable.js"></script>
+    <script src="/js/jquery.numberformatter-1.2.4.js"></script>
+    <script src="/js/jquery.flapper.js"></script>
+    <script src="/js/handlebars-v2.0.0.js"></script>
+
+    <script id="data-rate-template" type="text/x-handlebars-template">
+        <div class="form-group no-padding no-border">
+          <div class="btn-group">
+            <button type="button" class="btn btn-default">
+              <span class="sensorTitle" style="width: 200px !important;">{{displayTitle}}</span>
+            </button>
+            <button type="button" class="btn btn-default dropdown-toggle" data-toggle="dropdown">
+              <span class="caret"></span>
+              <span class="sr-only">Transmission Rate</span>
+            </button>
+            <ul class="dropdown-menu" role="menu" style="z-index: 999;">
+              {{#each dataRates}}
+                <li><a href="#" onClick="changeTransmissionRate('{{@root.uuid}}','{{../title}}','{{this}}')">{{this}} ms</a></li>
+              {{/each}}
+            </ul>
+          </div>
+          <label class="center-block text-center">&nbsp;</label>
+        </div>
+    </script>
+
+    <script id="sensor-template" type="text/x-handlebars-template">
+      <form class="form-inline {{sensor.title}}" role="form"  style="padding: 0px; display: none;">
+          {{> data-rate-template sensor}}
+          {{#each sensor.data}}
+            <div class="form-group no-padding no-border" style="padding-right: 25px;">
+              <input type="text" class="flipper form-control no-padding no-border XS" id="{{../uuid}}_{{../sensor.title}}_{{@key}}"/>
+              <label class="center-block text-center">{{@key}}</label>
+            </div>
+          {{/each}}
+      </form>
+    </script>
+
+    <script id="tag-template" type="text/x-handlebars-template">
+      <div id="{{uuid}}" style="display: none;">
+        <h1>Tag Id: {{uuid}}</h1>
+        <div class="sensors">
+        </div>
+      </div>
+    </script>
+
+    <script>
+      var changeTransmissionRate = function(uuid,sensorName,selectedDataRate){
+        var url = '/fromclient/fortag/';
+        var data = {
+            uuid: uuid,
+            sensorName: sensorName,
+            command: 'set'+sensorName+'Period',
+            data: selectedDataRate
+        };
+
+        var ajax = $.ajax({
+          type: "POST",
+          url: url,
+          data: data,
+          dataType: 'json',
+          username: 'saad',
+          password: 'saad1'
+        });
+
+        ajax.then(function(response){
+          console.log(response);
+        });
+      };
+
+      var updateData = function(tag){
+        if (!tag || !tag.uuid) return;
+        var tagEl = $('div#'+tag.uuid);
+        if (tag.isDisconnected && tagEl.length){
+          tagEl.fadeOut(2000,function(){ tagEl.remove(); });
+          return;
+        }
+
+        if (!tag.sensors) return;
+        $('div#'+tag.uuid).length || $('#container').append(templates['tag-template'](tag));
+        $('div#'+tag.uuid).fadeIn(500);
+        tag.sensors.forEach(function(sensor){
+          if ($('form.'+sensor.title,tagEl).length < 1) tagEl.append(templates['sensor-template']({uuid: tag.uuid, sensor: sensor}));
+          $('form.'+sensor.title,tagEl).slideDown(1000);
+          _(sensor.data).each(function(v,k){
+            var flipper = $('#' + tag.uuid + '_' + sensor.title + '_' + k);
+            if (flipper.next('div.flapper').length < 1){
+              flipper.flapper(flapperOptions);
+            }
+            flipper.val(v).change();
+          });
+        });
+      };
+
+      $(document).ready(function() {
+        compile();
+        websockets();
+      });
+    </script>
+
+    <script type="text/javascript">
+      var websockets = function(){
+        var host = window.document.location.host.replace(/:.*/, '');
+        var ws = new WebSocket('ws://' + host + ':8080');
+        ws.onmessage = function (event){
+          //console.log(event.data);
+          var json = JSON.parse(event.data);
+          updateData(json.tag);
+        };
+      };
+
+      var templates = {};
+      var compile = function(){
+        templates['data-rate-template'] = Handlebars.compile($("#data-rate-template").html());
+        templates['sensor-template']    = Handlebars.compile($("#sensor-template").html());
+        templates['tag-template']       = Handlebars.compile($("#tag-template").html());
+
+        Handlebars.registerPartial("data-rate-template", templates['data-rate-template']);
+        Handlebars.registerPartial("sensor-template", templates['sensor-template']);
+        Handlebars.registerPartial("tag-template", templates['tag-template']);
+      };
+
+      var flapperOptions = {
+        width: 10,             // number of digits
+        format: {format: '-####.0000', locale:"us"},         // options for jquery.numberformatter, if loaded
+        align: 'right',       // aligns values to the left or right of display
+        padding: ' ',    // value to use for padding
+        chars: null,
+        chars_preset: 'num',  // 'num', 'hexnum', 'alpha' or 'alphanum'
+        timing: 100,          // the maximum timing for digit animation
+        min_timing: 10,       // the minimum timing for digit animation
+        transform: true       // Flapper automatically detects the jquery.transform
+      };
+    </script>
+  </head>
+
+  <body>
+    <div id="container" style="margin: 1em;"></div> <!-- /container -->
+</body>
+
+</html>
