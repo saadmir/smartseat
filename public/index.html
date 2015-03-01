@@ -64,12 +64,19 @@
 
           switch (json.event){
             case "data":
+              if (!tists[json.tid]){
+                var emptySeatId = findEmptySeat();
+                if (emptySeatId) {
+                  tists[json.tid] = emptySeatId;
+                }
+              }
               if (tists[json.tid]){
                 var seatid = tists[json.tid];
                 $('#'+seatid).css({'padding-top': '25px'});
                 $('#'+seatid).css({'padding-left': '25px'});
-                $('#'+seatid).css({'color': '#FFFFFF'});
-                var weight = Math.floor( ((json.data.p - 1000)/130) * 200);
+                $('#'+seatid).css({'color': '#000000'});
+                var weight = 0;
+                if (json.data && json.data.p) weight = Math.floor( ((json.data.p - 1000)/130) * 200);
                 if (weight < 50){
                     $('#'+seatid).html();
                 } else {
@@ -91,7 +98,8 @@
                 $('#'+seatid).css({'padding-top': '25px'});
                 $('#'+seatid).css({'padding-left': '25px'});
                 $('#'+seatid).css({'color': '#000000'});
-                var weight = Math.floor( ((json.data.p - 1000)/130) * 200);
+                var weight = 0;
+                if (json.data && json.data.p) weight = Math.floor( ((json.data.p - 1000)/130) * 200);
                 if (weight < 50){
                     $('#'+seatid).html();
                 } else {
@@ -112,13 +120,10 @@
                 var seatid = tists[json.tid];
                 seats[seatid].status = 'empty';
                 $('#'+seatid).html('');
-                delete tists[json.tid];
                 $('#'+seatid).css({'background-color': 'green'});
               }
               break;
             case "disconnected":
-              console.log('> > >disconnected');
-              console.log(tists[json.tid]);
               if (tists[json.tid]){
                 var seatid = tists[json.tid];
                 $('#'+seatid).html('');
@@ -130,7 +135,6 @@
             case "paired":
               if (!tists[json.tid]){
                 var emptySeatId = findEmptySeat();
-                console.log(emptySeatId);
                 if (emptySeatId) {
                   tists[json.tid] = emptySeatId;
                   $('#'+emptySeatId).css({'background-color': 'green'});
