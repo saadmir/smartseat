@@ -78,10 +78,16 @@
         var host = window.document.location.host.replace(/:.*/, '');
         var ws = new WebSocket('ws://' + host + ':8080');
         ws.onmessage = function (event){
-          console.log(event.data);
           var json = JSON.parse(event.data);
+          console.log(json);
 
           switch (json.event){
+            case "data":
+              if (tists[json.tid]){
+                var seatid = tists[json.tid];
+                $('#'+seatid).html(json.p);
+              }
+              break;
             case "occupied":
               if (!tists[json.tid]){
                 var emptySeatId = findEmptySeat();
@@ -96,6 +102,13 @@
               }
               break;
             case "empty":
+              if (!tists[json.tid]){
+                var emptySeatId = findEmptySeat();
+                if (emptySeatId) {
+                  tists[json.tid] = emptySeatId;
+                  $('#'+emptySeatId).css({'background-color': 'green'});
+                }
+              }
               if (tists[json.tid]){
                 var seatid = tists[json.tid];
                 seats[seatid].status = 'empty';
@@ -119,7 +132,8 @@
                   tists[json.tid] = emptySeatId;
                   $('#'+emptySeatId).css({'background-color': 'green'});
                 }
-                break;
+              }
+              break;
             }
           }
         };
