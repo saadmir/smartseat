@@ -6,6 +6,7 @@ var sqlite3 = require("sqlite3").verbose();
 
 var app = express();
 
+
 var query = {};
 
 var db  = new sqlite3.Database('/data/buttz.sqlite');
