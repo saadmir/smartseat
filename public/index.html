@@ -85,7 +85,7 @@
             case "data":
               if (tists[json.tid]){
                 var seatid = tists[json.tid];
-                $('#'+seatid).html(json.p);
+                $('#'+seatid).html(json.data.p);
               }
               break;
             case "occupied":
@@ -136,7 +136,6 @@
               break;
             }
           }
-        };
       };
 
       var templates = {};
