@@ -12,12 +12,6 @@ var query = {};
 var db  = new sqlite3.Database('/home/pi/data/smartseat.sqlite');
 db.serialize(function() {
   db.run("CREATE TABLE IF NOT EXISTS tist(tid, timestamp INTEGER, event TEXT, temp_ir REAL, temp_amb REAL, a_x REAL, a_y REAL, a_z REAL, g_x REAL, g_y REAL, g_z REAL, h REAL, m_x REAL, m_y REAL, m_z REAL, p REAL, temp_p REAL)");
-  //db.run("INSERT INTO demo (runtime) VALUES (?)", new Date().getTime());
-  //db.each("SELECT runtime FROM demo", function(err, row) {
-      //console.log("This app was run at " + row.runtime);
-  //});
-  query.insert = db.prepare("INSERT INTO tist VALUES (?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?)");
-  query.delete = db.prepare("DELETE FROM tist WHERE rowid=?");
 });
 
 app.get('/update/:tid/:event', function(req, res){
@@ -35,7 +29,6 @@ app.get('/update/:tid/:event', function(req, res){
       });
       break;
     case "data":
-      console.log(req.query);
       var cols = [];
       var vals = [];
       Object.keys(req.query || {}).forEach(function(k){
@@ -64,7 +57,6 @@ app.get('/update/:tid/:event', function(req, res){
   }
 
   db.all("SELECT * FROM tist WHERE tid='" + req.params.tid + "'", function(err, rows) {
-    console.log(rows.length);
     res.json(rows);
     res.end();
   });
@@ -73,7 +65,6 @@ app.get('/update/:tid/:event', function(req, res){
 app.get('/:uid/:event', function(req, res){
   var query = "SELECT * FROM tist WHERE tid='" + req.params.uid + "' AND event='" + req.params.event.toUpperCase() + "' ORDER BY timestamp DESC ";
   db.all(query, function(err, rows) {
-    console.log(rows.length);
     res.json(rows);
     res.end();
   });
@@ -83,7 +74,6 @@ app.get('/:uid/:event/:limit', function(req, res){
   var query = "SELECT * FROM tist WHERE tid='" + req.params.uid + "' AND event='" + req.params.event.toUpperCase() + "' ORDER BY timestamp DESC ";
   if (req.params.limit) query += "LIMIT " + req.params.limit;
   db.all(query, function(err, rows) {
-    console.log(rows.length);
     res.json(rows);
     res.end();
   });

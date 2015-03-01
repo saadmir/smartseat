@@ -66,8 +66,8 @@
             case "data":
               if (tists[json.tid]){
                 var seatid = tists[json.tid];
-                $('#'+seatid).css({'padding-top': '10px'});
-                $('#'+seatid).css({'padding-left': '10px'});
+                $('#'+seatid).css({'padding-top': '25px'});
+                $('#'+seatid).css({'padding-left': '25px'});
                 $('#'+seatid).css({'color': '#FFFFFF'});
                 $('#'+seatid).html( Math.floor( ((json.data.p - 1000)/130) * 200) );
               }
@@ -116,7 +116,7 @@
                 seats[seatid].status = 'empty';
                 $('#'+seatid).html();
                 delete tists[json.tid];
-                $('#'+seatid).css({'background-color': '#CCCCCC'});
+                $('#'+seatid).css({'background-color': 'red'});
               }
               break;
             case "paired":
