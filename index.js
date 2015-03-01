@@ -23,17 +23,12 @@ db.serialize(function() {
 app.get('/update/:tid/:event', function(req, res){
 
   switch (req.params.event) {
-    case "disconnected":
-    case "paired":
-      query.insert.run(req.params.tid, new Date().getTime(),req.params.event.toUpperCase());
-      broadcast({
-        tid: req.params.tid,
-        event: req.params.event
-      });
-      break;
     case "occupied":
     case "empty":
-      query.insert.run(req.params.tid, new Date().getTime(),req.params.event.toUpperCase());
+    case "disconnected":
+    case "paired":
+      var query = "INSERT INTO tist('tid','timestamp','event') VALUES ('" + req.params.tid + "'," + new Date().getTime() + ",'" + req.params.event.toUpperCase() + "')";
+      db.run(query);
       broadcast({
         tid: req.params.tid,
         event: req.params.event
@@ -98,27 +93,27 @@ app.get('/', function(req, res){
   res.send('hello world');
 });
 
-//var WebSocketServer = require('ws').Server
-//var wss = new WebSocketServer({port: 8080});
+var WebSocketServer = require('ws').Server
+var wss = new WebSocketServer({port: 8080});
 
-//var idx = 0;
-//var clients = {};
-//wss.on('connection', function(ws){
-  //idx++;
-  //ws.idx = idx;
-  //console.log('inserting client: ' + ws.idx);
-  //clients[idx] = ws;
-  //ws.on('close', function() {
-    //console.log('stopping client: ' + ws.idx);
-    //delete clients[idx];
-  //});
-//});
+var idx = 0;
+var clients = {};
+wss.on('connection', function(ws){
+  idx++;
+  ws.idx = idx;
+  console.log('inserting client: ' + ws.idx);
+  clients[idx] = ws;
+  ws.on('close', function() {
+    console.log('stopping client: ' + ws.idx);
+    delete clients[idx];
+  });
+});
 
-var broadcast = function(data){
-  //var data = JSON.stringify(json);
-  //for(var i in clients){
-    //clients[i].send(data, function() { [> ignore errors <] });
-  //}
+var broadcast = function(json){
+  var data = JSON.stringify(json);
+  for(var i in clients){
+    clients[i].send(data, function() {});
+  }
 };
 
 app.listen(3000);

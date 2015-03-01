@@ -1,3 +1,23 @@
+#table
+{
+    position: relative;
+    width: 125px;
+    height: 125px;
+    background-color: blue;
+    border-radius: 150px;
+    margin: 150px;
+}
+
+.seat
+{
+    position: absolute;
+    width: 80px;
+    height: 80px;
+    background-color: #CCCCCC;
+    border-radius: 100px;
+}
+
+
 label {
   display: block;
 }

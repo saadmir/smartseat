@@ -17,36 +17,9 @@
     <script src="/js/jquery.flapper.js"></script>
     <script src="/js/handlebars-v2.0.0.js"></script>
 
-    <script id="data-rate-template" type="text/x-handlebars-template">
-        <div class="form-group no-padding no-border">
-          <div class="btn-group">
-            <button type="button" class="btn btn-default">
-              <span class="sensorTitle" style="width: 200px !important;">{{displayTitle}}</span>
-            </button>
-            <button type="button" class="btn btn-default dropdown-toggle" data-toggle="dropdown">
-              <span class="caret"></span>
-              <span class="sr-only">Transmission Rate</span>
-            </button>
-            <ul class="dropdown-menu" role="menu" style="z-index: 999;">
-              {{#each dataRates}}
-                <li><a href="#" onClick="changeTransmissionRate('{{@root.uuid}}','{{../title}}','{{this}}')">{{this}} ms</a></li>
-              {{/each}}
-            </ul>
-          </div>
-          <label class="center-block text-center">&nbsp;</label>
-        </div>
-    </script>
 
-    <script id="sensor-template" type="text/x-handlebars-template">
-      <form class="form-inline {{sensor.title}}" role="form"  style="padding: 0px; display: none;">
-          {{> data-rate-template sensor}}
-          {{#each sensor.data}}
-            <div class="form-group no-padding no-border" style="padding-right: 25px;">
-              <input type="text" class="flipper form-control no-padding no-border XS" id="{{../uuid}}_{{../sensor.title}}_{{@key}}"/>
-              <label class="center-block text-center">{{@key}}</label>
-            </div>
-          {{/each}}
-      </form>
+    <script id="data-rate-template" type="text/x-handlebars-template">
+      <div class="circle one"></div>
     </script>
 
     <script id="tag-template" type="text/x-handlebars-template">
@@ -58,55 +31,44 @@
     </script>
 
     <script>
-      var changeTransmissionRate = function(uuid,sensorName,selectedDataRate){
-        var url = '/fromclient/fortag/';
-        var data = {
-            uuid: uuid,
-            sensorName: sensorName,
-            command: 'set'+sensorName+'Period',
-            data: selectedDataRate
-        };
-
-        var ajax = $.ajax({
-          type: "POST",
-          url: url,
-          data: data,
-          dataType: 'json',
-          username: 'saad',
-          password: 'saad1'
-        });
-
-        ajax.then(function(response){
-          console.log(response);
-        });
+      var seats = {};
+      var tists = {};
+      var setupTable = function(seatCount){
+        var div = 360 / seatCount;
+        var radius = 150;
+        var parentdiv = document.getElementById('table');
+        var offsetToParentCenter = parseInt(parentdiv.offsetWidth / 2);  //assumes parent is square
+        var offsetToChildCenter = 40;
+        var totalOffset = offsetToParentCenter - offsetToChildCenter;
+        for (var i = 1; i <= seatCount; ++i) {
+          var childdiv = document.createElement('div');
+          childdiv.id = 'seat-' + i;
+          childdiv.className = 'seat';
+          childdiv.style.position = 'absolute';
+          var y = Math.sin((div * i) * (Math.PI / 180)) * radius;
+          var x = Math.cos((div * i) * (Math.PI / 180)) * radius;
+          childdiv.style.top = (y + totalOffset).toString() + "px";
+          childdiv.style.left = (x + totalOffset).toString() + "px";
+          parentdiv.appendChild(childdiv);
+          seats[childdiv.id] = {
+            seatid: childdiv.id,
+            status: 'disabled',
+            element: $('#' + childdiv.id)
+          };
+        }
       };
 
-      var updateData = function(tag){
-        if (!tag || !tag.uuid) return;
-        var tagEl = $('div#'+tag.uuid);
-        if (tag.isDisconnected && tagEl.length){
-          tagEl.fadeOut(2000,function(){ tagEl.remove(); });
-          return;
-        }
-
-        if (!tag.sensors) return;
-        $('div#'+tag.uuid).length || $('#container').append(templates['tag-template'](tag));
-        $('div#'+tag.uuid).fadeIn(500);
-        tag.sensors.forEach(function(sensor){
-          if ($('form.'+sensor.title,tagEl).length < 1) tagEl.append(templates['sensor-template']({uuid: tag.uuid, sensor: sensor}));
-          $('form.'+sensor.title,tagEl).slideDown(1000);
-          _(sensor.data).each(function(v,k){
-            var flipper = $('#' + tag.uuid + '_' + sensor.title + '_' + k);
-            if (flipper.next('div.flapper').length < 1){
-              flipper.flapper(flapperOptions);
-            }
-            flipper.val(v).change();
-          });
+      var findEmptySeat = function(){
+        var seatid;
+        Object.keys(seats).forEach(function(s){
+          if (seats[s].status == 'disabled' || seats[s].status == 'empty') seatid = seats[s].seatid;
         });
+        if (seatid) return seatid;
       };
 
       $(document).ready(function() {
-        compile();
+        setupTable(5);
+        //compile();
         websockets();
       });
     </script>
@@ -116,9 +78,50 @@
         var host = window.document.location.host.replace(/:.*/, '');
         var ws = new WebSocket('ws://' + host + ':8080');
         ws.onmessage = function (event){
-          //console.log(event.data);
+          console.log(event.data);
           var json = JSON.parse(event.data);
-          updateData(json.tag);
+
+          switch (json.event){
+            case "occupied":
+              if (!tists[json.tid]){
+                var emptySeatId = findEmptySeat();
+                if (emptySeatId) {
+                  tists[json.tid] = emptySeatId;
+                }
+              }
+              if (tists[json.tid]){
+                var seatid = tists[json.tid];
+                seats[seatid].status = 'occupied';
+                $('#'+seatid).css({'background-color': 'red'});
+              }
+              break;
+            case "empty":
+              if (tists[json.tid]){
+                var seatid = tists[json.tid];
+                seats[seatid].status = 'empty';
+                delete tists[json.tid];
+                $('#'+seatid).css({'background-color': 'green'});
+              }
+              break;
+            case "disconnected":
+              if (tists[json.tid]){
+                var seatid = tists[json.tid];
+                seats[seatid].status = 'empty';
+                delete tists[json.tid];
+                $('#'+seatid).css({'background-color': '#CCCCCC'});
+              }
+              break;
+            case "paired":
+              if (!tists[json.tid]){
+                var emptySeatId = findEmptySeat();
+                console.log(emptySeatId);
+                if (emptySeatId) {
+                  tists[json.tid] = emptySeatId;
+                  $('#'+emptySeatId).css({'background-color': 'green'});
+                }
+                break;
+            }
+          }
         };
       };
 
@@ -132,23 +135,13 @@
         Handlebars.registerPartial("sensor-template", templates['sensor-template']);
         Handlebars.registerPartial("tag-template", templates['tag-template']);
       };
-
-      var flapperOptions = {
-        width: 10,             // number of digits
-        format: {format: '-####.0000', locale:"us"},         // options for jquery.numberformatter, if loaded
-        align: 'right',       // aligns values to the left or right of display
-        padding: ' ',    // value to use for padding
-        chars: null,
-        chars_preset: 'num',  // 'num', 'hexnum', 'alpha' or 'alphanum'
-        timing: 100,          // the maximum timing for digit animation
-        min_timing: 10,       // the minimum timing for digit animation
-        transform: true       // Flapper automatically detects the jquery.transform
-      };
     </script>
   </head>
 
   <body>
-    <div id="container" style="margin: 1em;"></div> <!-- /container -->
+    <div id="container" style="margin: 1em;">
+      <div id="table"></div>
+    </div> <!-- /container -->
 </body>
 
 </html>
