@@ -3,7 +3,6 @@
   <head>
     <link rel="stylesheet" href="/css/bootstrap.min.css">
     <link rel="stylesheet" href="/css/bootstrap-theme.min.css">
-    <link rel="stylesheet" href="/css/flapper.css" type="text/css" />
     <link rel="stylesheet" href="/css/styles.css" type="text/css" />
 
     <meta name="viewport" content="width=device-width, initial-scale=1">
@@ -11,24 +10,12 @@
     <script src="/js/jquery.min.js"></script>
     <script src="/js/bootstrap.min.js"></script>
     <script src="/js/underscore-min.js"></script>
-    <script src="/js/jquery.transform-0.9.3.min.js"></script>
-    <script src="/js/jshashtable.js"></script>
-    <script src="/js/jquery.numberformatter-1.2.4.js"></script>
-    <script src="/js/jquery.flapper.js"></script>
     <script src="/js/handlebars-v2.0.0.js"></script>
 
-
-    <script id="data-rate-template" type="text/x-handlebars-template">
-      <div class="circle one"></div>
-    </script>
-
-    <script id="tag-template" type="text/x-handlebars-template">
-      <div id="{{uuid}}" style="display: none;">
-        <h1>Tag Id: {{uuid}}</h1>
-        <div class="sensors">
-        </div>
-      </div>
-    </script>
+    <link rel="stylesheet" href="/js/jqwidgets/styles/jqx.base.css" type="text/css" />
+    <script type="text/javascript" src="/js/jqwidgets/jqxcore.js"></script>
+    <script type="text/javascript" src="/js/jqwidgets/jqxdraw.js"></script>
+    <script type="text/javascript" src="/js/jqwidgets/jqxgauge.js"></script>
 
     <script>
       var seats = {};
@@ -85,7 +72,10 @@
             case "data":
               if (tists[json.tid]){
                 var seatid = tists[json.tid];
-                $('#'+seatid).html(json.data.p);
+                $('#'+seatid).css({'padding-top': '10px'});
+                $('#'+seatid).css({'padding-left': '10px'});
+                $('#'+seatid).css({'color': '#FFFFFF'});
+                $('#'+seatid).html( Math.floor( ((json.data.p - 1000)/130) * 200) );
               }
               break;
             case "occupied":
@@ -99,6 +89,15 @@
                 var seatid = tists[json.tid];
                 seats[seatid].status = 'occupied';
                 $('#'+seatid).css({'background-color': 'red'});
+                $('#'+seatid).css({'padding-top': '35px'});
+                $('#'+seatid).css({'padding-left': '35px'});
+                $('#'+seatid).css({'color': '#FFFFFF'});
+                var weight = Math.floor( ((json.data.p - 1000)/130) * 200);
+                if (weight < 50){
+                    $('#'+seatid).html();
+                } else {
+                    $('#'+seatid).html(weight);
+                }
               }
               break;
             case "empty":
@@ -112,6 +111,7 @@
               if (tists[json.tid]){
                 var seatid = tists[json.tid];
                 seats[seatid].status = 'empty';
+                $('#'+seatid).html();
                 delete tists[json.tid];
                 $('#'+seatid).css({'background-color': 'green'});
               }
@@ -120,6 +120,7 @@
               if (tists[json.tid]){
                 var seatid = tists[json.tid];
                 seats[seatid].status = 'empty';
+                $('#'+seatid).html();
                 delete tists[json.tid];
                 $('#'+seatid).css({'background-color': '#CCCCCC'});
               }
@@ -137,23 +138,17 @@
             }
           }
       };
-
-      var templates = {};
-      var compile = function(){
-        templates['data-rate-template'] = Handlebars.compile($("#data-rate-template").html());
-        templates['sensor-template']    = Handlebars.compile($("#sensor-template").html());
-        templates['tag-template']       = Handlebars.compile($("#tag-template").html());
-
-        Handlebars.registerPartial("data-rate-template", templates['data-rate-template']);
-        Handlebars.registerPartial("sensor-template", templates['sensor-template']);
-        Handlebars.registerPartial("tag-template", templates['tag-template']);
-      };
     </script>
   </head>
 
   <body>
-    <div id="container" style="margin: 1em;">
-      <div id="table"></div>
+    <div id="container" style="margin: 1em;" class="center-block">
+      <div class="page-header">
+        <h1>SmartSeat.me <small>seats with brains</small></h1>
+      </div>
+      <div class="jumbotron">
+        <div id="table"></div>
+      </div>
     </div> <!-- /container -->
 </body>
 
