@@ -3,21 +3,20 @@
 var fs          = require('fs');
 var express = require('express');
 var sqlite3 = require("sqlite3").verbose();
-var WebSocketServer   = require('ws').Server;
 
 var app = express();
-
+app.use(express.static(__dirname + '/public'));
 
 var query = {};
 
 var db  = new sqlite3.Database('/home/pi/data/smartseat.sqlite');
 db.serialize(function() {
-  db.run("CREATE TABLE IF NOT EXISTS tist(tid, timestamp INTEGER, event TEXT, temp_ir REAL, temp_amb REAL, a_x REAL, a_y REAL, a_z REAL, g_x REAL, g_y REAL, g_z REAL, h REAL, m_x REAL, m_y REAL, m_z REAL)");
+  db.run("CREATE TABLE IF NOT EXISTS tist(tid, timestamp INTEGER, event TEXT, temp_ir REAL, temp_amb REAL, a_x REAL, a_y REAL, a_z REAL, g_x REAL, g_y REAL, g_z REAL, h REAL, m_x REAL, m_y REAL, m_z REAL, p REAL, temp_p REAL)");
   //db.run("INSERT INTO demo (runtime) VALUES (?)", new Date().getTime());
   //db.each("SELECT runtime FROM demo", function(err, row) {
       //console.log("This app was run at " + row.runtime);
   //});
-  query.insert = db.prepare("INSERT INTO tist VALUES (?,?,?,?,?,?,?,?,?,?,?,?,?,?,?)");
+  query.insert = db.prepare("INSERT INTO tist VALUES (?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?)");
   query.delete = db.prepare("DELETE FROM tist WHERE rowid=?");
 });
 
@@ -27,10 +26,18 @@ app.get('/update/:tid/:event', function(req, res){
     case "disconnected":
     case "paired":
       query.insert.run(req.params.tid, new Date().getTime(),req.params.event.toUpperCase());
+      broadcast({
+        tid: req.params.tid,
+        event: req.params.event
+      });
       break;
     case "occupied":
     case "empty":
       query.insert.run(req.params.tid, new Date().getTime(),req.params.event.toUpperCase());
+      broadcast({
+        tid: req.params.tid,
+        event: req.params.event
+      });
       break;
     case "data":
       console.log(req.query);
@@ -50,6 +57,14 @@ app.get('/update/:tid/:event', function(req, res){
       var query = "INSERT INTO tist(" + cols.join(',') + ") VALUES (" + vals.join(',') + ")";
       console.log(query);
       db.run(query);
+
+      var data = {
+        tid: req.params.tid,
+        event: req.params.event
+      };
+
+      data.data = req.query || {};
+      broadcast(data);
       break;
   }
 
@@ -99,14 +114,12 @@ app.get('/', function(req, res){
   //});
 //});
 
-//var broadcast = function(data){
-  ////var data = JSON.stringify(json);
+var broadcast = function(data){
+  //var data = JSON.stringify(json);
   //for(var i in clients){
     //clients[i].send(data, function() { [> ignore errors <] });
   //}
-//};
-
-
+};
 
 app.listen(3000);
 
