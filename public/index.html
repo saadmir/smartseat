@@ -113,10 +113,10 @@
             case "disconnected":
               if (tists[json.tid]){
                 var seatid = tists[json.tid];
-                seats[seatid].status = 'empty';
                 $('#'+seatid).html();
-                delete tists[json.tid];
                 $('#'+seatid).css({'background-color': 'red'});
+                seats[seatid].status = 'empty';
+                delete tists[json.tid];
               }
               break;
             case "paired":
