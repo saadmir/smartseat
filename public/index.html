@@ -82,9 +82,9 @@
               if (tists[json.tid]){
                 var seatid = tists[json.tid];
                 seats[seatid].status = 'occupied';
-                $('#'+seatid).css({'background-color': 'red'});
-                $('#'+seatid).css({'padding-top': '35px'});
-                $('#'+seatid).css({'padding-left': '35px'});
+                $('#'+seatid).css({'background-color': 'yellow'});
+                $('#'+seatid).css({'padding-top': '50px'});
+                $('#'+seatid).css({'padding-left': '50px'});
                 $('#'+seatid).css({'color': '#FFFFFF'});
                 var weight = Math.floor( ((json.data.p - 1000)/130) * 200);
                 if (weight < 50){
@@ -138,7 +138,7 @@
   <body>
     <div id="container" style="margin: 1em;" class="center-block">
       <div class="page-header">
-        <h1>SmartSeat.me <small>seats with brains</small></h1>
+        <h1>SmartSeat.me <small>connected seats + occupancy analytics</small></h1>
       </div>
       <div class="jumbotron">
         <div id="table"></div>

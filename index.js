@@ -116,7 +116,5 @@ var broadcast = function(json){
   }
 };
 
-app.listen(3000);
-
-
-
+app.listen(80);
+console.log('server started on port 80');

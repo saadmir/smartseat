@@ -1,0 +1,167 @@
+<!DOCTYPE html>
+<html lang="en">
+  <head>
+    <link rel="stylesheet" href="/css/styles.css" type="text/css" />
+
+    <meta name="viewport" content="width=device-width, initial-scale=1">
+
+    <script src="/js/jquery.min.js"></script>
+
+    <link rel="stylesheet" href="/js/jqwidgets/styles/jqx.base.css" type="text/css" />
+    <script type="text/javascript" src="/js/scripts/jquery-1.11.1.min.js"></script>
+    <script type="text/javascript" src="/js/jqwidgets/jqxcore.js"></script>
+    <script type="text/javascript" src="/js/jqwidgets/jqxdraw.js"></script>
+    <script type="text/javascript" src="/js/jqwidgets/jqxgauge.js"></script>
+
+    <script>
+      var seats = {};
+      var tists = {};
+      var setupTable = function(seatCount){
+        var div = 360 / seatCount;
+        var radius = 150;
+        var parentdiv = document.getElementById('table');
+        var offsetToParentCenter = parseInt(parentdiv.offsetWidth / 2);  //assumes parent is square
+        var offsetToChildCenter = 40;
+        var totalOffset = offsetToParentCenter - offsetToChildCenter;
+        for (var i = 1; i <= seatCount; ++i) {
+          var childdiv = document.createElement('div');
+          childdiv.id = 'seat-' + i;
+          //childdiv.className = 'seat';
+          childdiv.className = 'gaugeContainer';
+          childdiv.style.position = 'absolute';
+          var y = Math.sin((div * i) * (Math.PI / 180)) * radius;
+          var x = Math.cos((div * i) * (Math.PI / 180)) * radius;
+          childdiv.style.top = (y + totalOffset).toString() + "px";
+          childdiv.style.left = (x + totalOffset).toString() + "px";
+          parentdiv.appendChild(childdiv);
+          seats[childdiv.id] = {
+            seatid: childdiv.id,
+            status: 'disabled',
+            element: $('#' + childdiv.id)
+          };
+        }
+      };
+
+      var findEmptySeat = function(){
+        var seatid;
+        Object.keys(seats).forEach(function(s){
+          if (seats[s].status == 'disabled' || seats[s].status == 'empty') seatid = seats[s].seatid;
+        });
+        if (seatid) return seatid;
+      };
+
+      $(document).ready(function() {
+        setupTable(5);
+        //compile();
+        websockets();
+      });
+    </script>
+
+    <script type="text/javascript">
+      var websockets = function(){
+        var host = window.document.location.host.replace(/:.*/, '');
+        var ws = new WebSocket('ws://' + host + ':8080');
+        ws.onmessage = function (event){
+          var json = JSON.parse(event.data);
+          console.log(json);
+
+          switch (json.event){
+            case "data":
+              if (tists[json.tid]){
+                var seatid = tists[json.tid];
+                $('#'+seatid).css({'padding-top': '10px'});
+                $('#'+seatid).css({'padding-left': '10px'});
+                $('#'+seatid).css({'color': '#FFFFFF'});
+                $('#'+seatid).html( Math.floor( ((json.data.p - 1000)/130) * 200) );
+              }
+              break;
+            case "occupied":
+              if (!tists[json.tid]){
+                var emptySeatId = findEmptySeat();
+                if (emptySeatId) {
+                  tists[json.tid] = emptySeatId;
+                }
+              }
+              if (tists[json.tid]){
+                var seatid = tists[json.tid];
+                seats[seatid].status = 'occupied';
+                $('#'+seatid).css({'background-color': 'red'});
+                $('#'+seatid).css({'padding-top': '35px'});
+                $('#'+seatid).css({'padding-left': '35px'});
+                $('#'+seatid).css({'color': '#FFFFFF'});
+                var weight = Math.floor( ((json.data.p - 1000)/130) * 200);
+                if (weight < 50){
+                    $('#'+seatid).html();
+                } else {
+                    $('#'+seatid).html(weight);
+                }
+              }
+              break;
+            case "empty":
+              if (!tists[json.tid]){
+                var emptySeatId = findEmptySeat();
+                if (emptySeatId) {
+                  tists[json.tid] = emptySeatId;
+                  $('#'+emptySeatId).css({'background-color': 'green'});
+                }
+              }
+              if (tists[json.tid]){
+                var seatid = tists[json.tid];
+                seats[seatid].status = 'empty';
+                $('#'+seatid).html();
+                delete tists[json.tid];
+                $('#'+seatid).css({'background-color': 'green'});
+              }
+              break;
+            case "disconnected":
+              if (tists[json.tid]){
+                var seatid = tists[json.tid];
+                seats[seatid].status = 'empty';
+                $('#'+seatid).html();
+                delete tists[json.tid];
+                $('#'+seatid).css({'background-color': '#CCCCCC'});
+              }
+              break;
+            case "paired":
+              if (!tists[json.tid]){
+                var emptySeatId = findEmptySeat();
+                console.log(emptySeatId);
+                if (emptySeatId) {
+                  tists[json.tid] = emptySeatId;
+                  $('#'+emptySeatId).css({'background-color': 'green'});
+                }
+              }
+              break;
+            }
+          }
+      };
+
+        $(document).ready(function () {
+            $('div.gaugeContainer').jqxGauge({
+                ranges: [{ startValue: 0,   endValue: 55,  style: { fill: '#4bb648', stroke: '#4bb648' }, endWidth: 5, startWidth: 1 },
+                         { startValue: 55,  endValue: 110, style: { fill: '#fbd109', stroke: '#fbd109' }, endWidth: 10, startWidth: 5 },
+                         { startValue: 110, endValue: 165, style: { fill: '#ff8000', stroke: '#ff8000' }, endWidth: 13, startWidth: 10 },
+                         { startValue: 165, endValue: 220, style: { fill: '#e02629', stroke: '#e02629' }, endWidth: 16, startWidth: 13 }],
+                ticksMinor: { interval: 25, size: '5%' },
+                ticksMajor: { interval: 50, size: '9%' },
+                value: 0,
+                width: '100%',
+                height: '100%',
+                min: 50,
+                max: 300,
+                colorScheme: 'scheme05',
+                animationDuration: 1200
+            });
+            $('div.gaugeContainer').jqxGauge('setValue', 220);
+            //$('#table').hide();
+          });
+    </script>
+  </head>
+
+  <body>
+    <div id="container" style="margin: 1em;">
+      <div id="table"></div>
+    </div> <!-- /container -->
+</body>
+
+</html>
